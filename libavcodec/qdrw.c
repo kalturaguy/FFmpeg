@@ -95,6 +95,8 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
                         pos -= offset;
                         pos++;
                     }
+                    if (pos >= offset)
+                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 2;
             } else { /* copy */
@@ -105,6 +107,8 @@ static int decode_rle(AVCodecContext *avctx, AVFrame *p, GetByteContext *gbc,
                         pos -= offset;
                         pos++;
                     }
+                    if (pos >= offset)
+                        return AVERROR_INVALIDDATA;
                 }
                 left  -= 2 + code;
             }
@@ -149,7 +153,6 @@ static int decode_frame(AVCodecContext *avctx,
 
     bytestream2_init(&gbc, avpkt->data, avpkt->size);
     if (   bytestream2_get_bytes_left(&gbc) >= 552
-           && !check_header(gbc.buffer      , bytestream2_get_bytes_left(&gbc))
            &&  check_header(gbc.buffer + 512, bytestream2_get_bytes_left(&gbc) - 512)
        )
         bytestream2_skip(&gbc, 512);
@@ -278,10 +281,8 @@ static int decode_frame(AVCodecContext *avctx,
                 avpriv_request_sample(avctx, "Pack type %d", pack_type);
                 return AVERROR_PATCHWELCOME;
             }
-            if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
                 return ret;
-            }
 
             /* jump to data */
             bytestream2_skip(&gbc, 30);
@@ -336,5 +337,5 @@ AVCodec ff_qdraw_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_QDRAW,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -349,10 +349,16 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     int off = 0, stride = 1, width, shift, ret = 0;
 
     zero = av_mallocz(s->picture_ptr->linesize[0]);
+    if (!zero)
+        return AVERROR(ENOMEM);
     last = zero;
     cur  = s->picture_ptr->data[0];
 
     state = av_mallocz(sizeof(JLSState));
+    if (!state) {
+        av_free(zero);
+        return AVERROR(ENOMEM);
+    }
     /* initialize JPEG-LS state from JPEG parameters */
     state->near   = near;
     state->bpp    = (s->bits < 2) ? 2 : s->bits;
@@ -517,6 +523,6 @@ AVCodec ff_jpegls_decoder = {
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
